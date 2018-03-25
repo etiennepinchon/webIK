@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Demo</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
+  </head>
+  <body>
+
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+    <script src="src/inflate.js"></script>
+
+    <script src="dist/webIK.js"></script>
+
+    <a-scene stats>
+
+      <a-sky color="#AAA"></a-sky>
+
+      <a-entity avatar></a-entity>
+
+      <!-- For VR Testing: Need to be activated in the index.js (disabled for now) -->
+
+      <a-entity vive-controls="hand: left"></a-entity>
+      <a-entity vive-controls="hand: right"></a-entity>
+
+
+
+
+      <!-- Use this to debug without the need for a headset -->
+      <!-- Animation are emulating user movement -->
+
+      <!-- Emulate head -->
+      <a-box id="cameraControl" width="0.1" height="0.1" depth="0.1" color="blue" position="0 1.6 -1">
+        <a-animation attribute="rotation"
+               dur="1000"
+               direction="alternate"
+               fill="forwards"
+               to="20 30 0"
+               repeat="indefinite"></a-animation>
+      </a-box>
+
+      <!-- Emulate left controller -->
+      <a-box id="leftControl" width="0.1" height="0.1" depth="0.1" color="red" position="-0.3 1.1 -0.8">
+        <a-animation attribute="rotation"
+               dur="1000"
+               direction="alternate"
+               fill="forwards"
+               to="20 30 0"
+               repeat="indefinite"></a-animation>
+      </a-box>
+
+      <!-- Emulate right controller -->
+      <a-box id="rightControl" width="0.1" height="0.1" depth="0.1" color="red" position="0.3 1.1 -0.8">
+        <a-animation attribute="rotation"
+               dur="1000"
+               direction="alternate"
+               fill="forwards"
+               to="20 30 0"
+               repeat="indefinite"></a-animation>
+      </a-box>
+
+      <!-- -->
+
+    </a-scene>
+
+
+  </body>
+</html>
