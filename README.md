@@ -1,9 +1,13 @@
-# WebIK - An inverse kinematics for WebVR with support for ThreeJs and A-Frame.
+# WebIK - An inverse kinematics for WebVR with support for 3️⃣ThreeJs and 🅰️A-Frame.
 
-WIP of an inverse kinematics for WebVR. Port from FinalIK (Unity C#) > VRIK.
-The code has been ported but still need to be fully debugged. It is still not working correcty.
+WIP of an inverse kinematics for WebVR to create full body avatars. Port from VRIK (Unity C#) part of the FinalIK asset.
+The code has been ported to javascript but still need to be fully debugged. Also it is not working correcty. Also note that Unity is using left handed rotation but ThreeJS is using right handed rotation and this has not been adapted yet.
 
 ![](static/screenshot.png)
+
+## Links to check
+
+[convert-unity-transforms-to-three-js-rotations](https://stackoverflow.com/questions/18066581/convert-unity-transforms-to-three-js-rotations)
 
 ## Want to make some changes to it?
 
