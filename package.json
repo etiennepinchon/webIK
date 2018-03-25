@@ -44,5 +44,8 @@
     "aframe-component",
     "webvr",
     "vr"
-  ]
+  ],
+  "dependencies": {
+    "marked": "^0.3.18"
+  }
 }
