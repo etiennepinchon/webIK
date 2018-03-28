@@ -1,3 +1,4 @@
+import Utils from './helpers/Utils';
 
 /// The most basic element type in the %IK chain that all other types extend from.
 export default class Point {
@@ -22,37 +23,67 @@ export default class Point {
     this.defaultLocalRotation = Quaternion.identity;
   }
 
+
+
+
   /// Stores the default local state of the point.
   storeDefaultLocalState() {
-    this.defaultLocalPosition = this.transform.position;
-    this.defaultLocalRotation = this.transform.rotation;
+    this.defaultLocalPosition = this.transform.position.clone();
+
+    let rot = this.transform.quaternion.clone()
+    this.defaultLocalRotation = new Quaternion(rot.x, rot.y, rot.z, rot.w);
   }
 
+
+
+
   /// Fixes the transform to it's default local state.
+  // @TODO_CHECK: setFromQuaternion might be a failure point
   fixTransform() {
-    if (this.transform.position != this.defaultLocalPosition) transform.position = this.defaultLocalPosition;
-    if (this.transform.rotation != this.defaultLocalRotation) transform.rotation = this.defaultLocalRotation;
+    if (!this.transform.position.equals(this.defaultLocalPosition))
+      transform.position.copy( this.defaultLocalPosition );
+
+    let rot = this.transform.quaternion;
+    rot= new Quaternion(rot.x, rot.y, rot.z, rot.w);
+    if (!Quaternion.equals(rot, this.defaultLocalRotation))
+      transform.rotation.setFromQuaternion( this.defaultLocalRotation );
   }
+
+
+
 
   /// Updates the solverPosition (in world space).
   updateSolverPosition() {
-    this.solverPosition = this.transform.position;
+    window._scene.updateMatrixWorld();
+    this.solverPosition = this.transform.getWorldPosition();
   }
+
+
+
 
   /// Updates the solverPosition (in local space).
   updateSolverLocalPosition() {
-    this.solverPosition = this.transform.localPosition;
+    this.solverPosition = this.transform.position.clone();
   }
+
+
+
 
   /// Updates the solverPosition/Rotation (in world space).
   updateSolverState() {
-    this.solverPosition = this.transform.position;
-    this.solverRotation = this.transform.rotation;
+    window._scene.updateMatrixWorld();
+    this.solverPosition = this.transform.getWorldPosition();
+    let rot = this.transform.getWorldQuaternion();
+    this.solverRotation = new Quaternion(rot.x, rot.y, rot.z, rot.w);
   }
+
+
+
 
   /// Updates the solverPosition/Rotation (in local space).
   updateSolverLocalState() {
-    this.solverPosition = this.transform.position;
-    this.solverRotation = this.transform.rotation;
+    this.solverPosition = this.transform.position.clone();
+    let rot = this.transform.quaternion;
+    this.solverRotation = new Quaternion(rot.x, rot.y, rot.z, rot.w);
   }
 }

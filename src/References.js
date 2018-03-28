@@ -25,6 +25,9 @@ export default class References {
     if (options.rightToes) this.rightToes = options.rightToes; // Optional
   }
 
+
+
+
   // Returns an array of all the Transforms in the definition.
   getTransforms() {
   	return [
@@ -53,6 +56,9 @@ export default class References {
   	];
   }
 
+
+
+
   // Returns true if all required Transforms have been assigned (shoulder, toe and neck bones are optional).
 	get isFilled() {
 		if (
@@ -77,6 +83,9 @@ export default class References {
 		// Shoulder, toe and neck bones are optional
 		return true;
 	}
+
+
+
 
   // Returns true if none of the Transforms have been assigned.
   get isEmpty() {

@@ -4,27 +4,13 @@
 
 WIP of an inverse kinematics for WebVR to create full body avatars. 
 
-
-Port from VRIK (Unity C#) (part of the FinalIK asset).
-
-
-The code has been ported to javascript but still needs to be fully debugged and does not working correcty yet. Also note that Unity is using the left handed rotation system but ThreeJS is using the right handed system and this has not been adapted yet.
+The code still needs to be fully debugged and does not working correcty yet. 
 
 ![](static/screenshot.png)
-
-
-## Links to check
-
-[convert-unity-transforms-to-three-js-rotations](https://stackoverflow.com/questions/18066581/convert-unity-transforms-to-three-js-rotations)
 
 ## Want to make some changes to it?
 
 Please do! Together we can bring full body avatars to the web!
-
-### Original c# source
-
-Original c# source files from VRIK can be found in the c_sharp_source folder.
-Note that this is not the full FinalIK project, only the VR part. I do not own the right on the C# files, they are only here to help us porting the code to the web.
 
 ### Installation
 

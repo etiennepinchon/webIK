@@ -88,7 +88,9 @@ export default class Locomotion {
 			this.rightFootIndex = 0;
 	}
 
-	initiate(positions, rotations, hasToes) {
+
+
+	initiate(/*Vector3[]*/positions, /*Quaternion[]*/rotations, /*bool*/hasToes) {
 		this.leftFootIndex = hasToes ? 17 : 16;
 		this.rightFootIndex = hasToes ? 21 : 20;
 
@@ -98,17 +100,22 @@ export default class Locomotion {
 		];
 	}
 
+
+
 	reset(positions, rotations) {
-		this.lastComPosition = positions[1].clone().Lerp(positions[5], 0.25).add( rotations[0].clone().multiply(this.offset) );
+		this.lastComPosition = positions[1].clone().lerp(positions[5], 0.25).add( rotations[0].clone().multiplyVector3(this.offset) );
 		this.comVelocity = Vector3.zero;
 
 		this.footsteps[0].reset(rotations[0], positions[this.leftFootIndex], rotations[this.leftFootIndex]);
 		this.footsteps[1].reset(rotations[0], positions[this.rightFootIndex], rotations[this.rightFootIndex]);
 	}
 
-	addDeltaRotation(delta, pivot) {
-		let toLastComPosition = this.lastComPosition.clone().sub(pivot);
-		this.lastComPosition = pivot.clone().add(delta.clone().multiply(toLastComPosition) );
+
+
+
+	addDeltaRotation(/*Quaternion*/delta, /*Vector3*/pivot) {
+		let /*Vector3*/toLastComPosition = this.lastComPosition.clone().sub(pivot);
+		this.lastComPosition = pivot.clone().add(delta.clone().multiplyVector3(toLastComPosition) );
 
 		for (let f of this.footsteps) {
 			f.rotation = delta.clone().multiply(f.rotation);
@@ -116,18 +123,21 @@ export default class Locomotion {
 			f.stepToRot = delta.clone().multiply(f.stepToRot);
 			f.stepToRootRot = delta.clone().multiply(f.stepToRootRot);
 
-			let toF = f.position.clone().sub(pivot);
-			f.position = pivot.clone().add( delta.clone().multiply( toF ) );
+			let /*Vector3*/toF = f.position.clone().sub(pivot);
+			f.position = pivot.clone().add( delta.clone().multiplyVector3( toF ) );
 
-			let toStepFrom = f.stepFrom.clone().sub(pivot);
-			f.stepFrom = pivot.clone().add( delta.clone().multiply( toStepFrom) );
+			let /*Vector3*/toStepFrom = f.stepFrom.clone().sub(pivot);
+			f.stepFrom = pivot.clone().add( delta.clone().multiplyVector3( toStepFrom) );
 
-			let toStepTo = f.stepTo.clone().sub(pivot);
-			f.stepTo = pivot.clone().add( delta.clone().multiply( toStepTo) );
+			let /*Vector3*/toStepTo = f.stepTo.clone().sub(pivot);
+			f.stepTo = pivot.clone().add( delta.clone().multiplyVector3( toStepTo) );
 		}
 	}
 
-	addDeltaPosition(delta) {
+
+
+
+	addDeltaPosition(/*Vector3*/delta) {
 		this.lastComPosition.add(delta);
 
 		for (let f of this.footsteps) {
@@ -137,7 +147,10 @@ export default class Locomotion {
 		}
 	}
 
-	solve(rootBone, spine, leftLeg, rightLeg, leftArm, rightArm, supportLegIndex, leftFootPosition, rightFootPosition, leftFootRotation, rightFootRotation, leftFootOffset, rightFootOffset, leftHeelOffset, rightHeelOffset) {
+
+
+  // @TODO_CHECK: out params
+	solve(/*VirtualBone*/rootBone, spine, leftLeg, rightLeg, leftArm, rightArm, supportLegIndex, leftFootPosition, rightFootPosition, leftFootRotation, rightFootRotation, leftFootOffset, rightFootOffset, leftHeelOffset, rightHeelOffset) {
 		if (this.weight <= 0) {
 			leftFootPosition = Vector3.zero;
 			rightFootPosition = Vector3.zero;
@@ -151,18 +164,18 @@ export default class Locomotion {
 			return;
 		}
 
-		let rootUp = rootBone.solverRotation.clone().multiply(Vector3.up);
+		let rootUp = rootBone.solverRotation.clone().multiplyVector3(Vector3.up);
 
-		let leftThighPosition = spine.pelvis.solverPosition.clone().add( spine.pelvis.solverRotation.clone().multiply( leftLeg.thighRelativeToPelvis ) );
-		let rightThighPosition = spine.pelvis.solverPosition.clone().add( spine.pelvis.solverRotation.clone().multiply( rightLeg.thighRelativeToPelvis ) );
+		let leftThighPosition = spine.pelvis.solverPosition.clone().add( spine.pelvis.solverRotation.clone().multiplyVector3( leftLeg.thighRelativeToPelvis ) );
+		let rightThighPosition = spine.pelvis.solverPosition.clone().add( spine.pelvis.solverRotation.clone().multiplyVector3( rightLeg.thighRelativeToPelvis ) );
 
-		this.footsteps[0].characterSpaceOffset =  Vector3.left.multiplyScalar(this.footDistance);
-		this.footsteps[1].characterSpaceOffset =  Vector3.right.multiplyScalar(this.footDistance);
+		this.footsteps[0].characterSpaceOffset = Vector3.left.multiplyScalar(this.footDistance);
+		this.footsteps[1].characterSpaceOffset = Vector3.right.multiplyScalar(this.footDistance);
 
 		let forward = spine.faceDirection;
 		let forwardY = V3Tools.extractVertical(forward, rootUp, 1);
 		forward.sub( forwardY );
-		let forwardRotation = Quaternion.LookRotation(forward, rootUp);
+		let forwardRotation = Quaternion.lookRotation(forward, rootUp);
 
 		let pelvisMass = 1;
 		let headMass = 1;
@@ -176,20 +189,20 @@ export default class Locomotion {
 		this.centerOfMass.add( rightArm.position.clone().multiply( armMass ) );
 		this.centerOfMass.divide( totalMass );
 
-		this.centerOfMass.add( rootBone.solverRotation.clone().multiply( this.offset ) );
+		this.centerOfMass.add( rootBone.solverRotation.clone().multiplyVector3( this.offset ) );
 
 		this.comVelocity = Time.deltaTime > 0 ? this.centerOfMass.clone().sub( this.lastComPosition ).divideScalar( Time.deltaTime ) : Vector3.zero;
 		this.lastComPosition = this.centerOfMass;
-		this.comVelocity = this.comVelocity.clampLength (-Infinity, this.maxVelocity).clone().multiplyScalar( this.velocityFactor );
-		let centerOfMassV = this.centerOfMass.clone().add( this.comVelocity );
+		this.comVelocity = this.comVelocity.clone().clampLength(-Infinity, this.maxVelocity).multiplyScalar( this.velocityFactor );
+		let /*Vector3*/centerOfMassV = this.centerOfMass.clone().add( this.comVelocity );
 
-		let pelvisPositionGroundLevel = V3Tools.pointToPlane(spine.pelvis.solverPosition, rootBone.solverPosition, rootUp);
-		let centerOfMassVGroundLevel = V3Tools.pointToPlane(centerOfMassV, rootBone.solverPosition, rootUp);
+		let /*Vector3*/pelvisPositionGroundLevel = V3Tools.pointToPlane(spine.pelvis.solverPosition, rootBone.solverPosition, rootUp);
+		let /*Vector3*/centerOfMassVGroundLevel = V3Tools.pointToPlane(centerOfMassV, rootBone.solverPosition, rootUp);
 
-		let centerOfPressure = this.footsteps[0].position.clone().lerp(this.footsteps[1].position, 0.5);
+		let /*Vector3*/centerOfPressure = this.footsteps[0].position.clone().lerp(this.footsteps[1].position, 0.5);
 
-		let comDir = centerOfMassV.clone().sub( centerOfPressure );
-		let comAngle = comDir.angleTo(rootBone.solverRotation.clone().multiply(Vector3.up) ) * this.comAngleMlp;
+		let /*Vector3*/comDir = centerOfMassV.clone().sub( centerOfPressure );
+		let /*float*/comAngle = comDir.angleTo(rootBone.solverRotation.clone().multiply(Vector3.up) ) * this.comAngleMlp;
 
 		// Set support leg
 		for (let i = 0; i < this.footsteps.length; i++) {
@@ -201,13 +214,14 @@ export default class Locomotion {
 		// Update stepTo while stepping
 		for (let i = 0; i < this.footsteps.length; i++) {
 
-			if (this.footsteps[i].isStepping) {	// @TODO: debug
-				let stepTo = centerOfMassVGroundLevel.clone().add( rootBone.solverRotation.clone().multiply( this.footsteps[i].characterSpaceOffset ) );
+			if (this.footsteps[i].isStepping) {
+				let stepTo = centerOfMassVGroundLevel.clone().add( rootBone.solverRotation.clone().multiplyVector3( this.footsteps[i].characterSpaceOffset ) );
 
 				if (!this.stepBlocked(this.footsteps[i].stepFrom, stepTo, rootBone.solverPosition)) {
 					this.footsteps[i].updateStepping(stepTo, forwardRotation, 10);
 				}
-			} else {
+			}
+      else {
 				this.footsteps[i].updateStanding(forwardRotation, this.relaxLegTwistMinAngle, this.relaxLegTwistSpeed);
 			}
 		}
@@ -223,29 +237,31 @@ export default class Locomotion {
 
 			for (let i = 0; i < this.footsteps.length; i++) {
 				if (!this.footsteps[i].isStepping) {
-					let stepTo = centerOfMassVGroundLevel.clone().add( rootBone.solverRotation.clone().multiply( this.footsteps[i].characterSpaceOffset ) );
+					let stepTo = centerOfMassVGroundLevel.clone().add( rootBone.solverRotation.clone().multiplyVector3( this.footsteps[i].characterSpaceOffset ) );
 
-					let legLength = i == 0? leftLeg.mag: rightLeg.mag;
-					let thighPos = i == 0? leftThighPosition: rightThighPosition;
+					let legLength = i === 0 ? leftLeg.mag : rightLeg.mag;
+					let thighPos = i === 0 ? leftThighPosition : rightThighPosition;
 
 					let thighDistance = this.footsteps[i].position.clone().distanceTo(thighPos);
 
 					let lengthStep = false;
 					if (thighDistance >= legLength * this.maxLegStretch) {// * 0.95f) {
-						stepTo = pelvisPositionGroundLevel.add( rootBone.solverRotation.clone().multiply( this.footsteps[i].characterSpaceOffset ) );
+						stepTo = pelvisPositionGroundLevel.add( rootBone.solverRotation.clone().multiplyVector3( this.footsteps[i].characterSpaceOffset ) );
 						lengthStep = true;
 					}
 
 					let collision = false;
 					for (let n = 0; n < this.footsteps.length; n++) {
 						if (n != i && !lengthStep) {
-							if (this.footsteps[i].position.distanceTo(this.footsteps[n].position) < 0.25 && this.footsteps[i].position.clone().sub(stepTo).lengthSq() < footsteps[n].position.clone().sub(stepTo).lengthSq) {
-							} else collision = Locomotion.getLineSphereCollision(this.footsteps[i].position, stepTo, this.footsteps[n].position, 0.25);
+							if (this.footsteps[i].position.distanceTo(this.footsteps[n].position) < 0.25 && this.footsteps[i].position.clone().sub(stepTo).lengthSq() < this.footsteps[n].position.clone().sub(stepTo).lengthSq) {
+                // ???
+              }
+              else collision = Locomotion.getLineSphereCollision(this.footsteps[i].position, stepTo, this.footsteps[n].position, 0.25);
 							if (collision) break;
 						}
 					}
 
-					let angle = Quaternion.Angle(forwardRotation, this.footsteps[i].stepToRootRot);
+					let angle = Quaternion.angle(forwardRotation, this.footsteps[i].stepToRootRot);
 
 					if (!collision || angle > this.angleThreshold) {
 						let stepDistance = this.footsteps[i].position.clone().distanceTo(stepTo);
@@ -271,7 +287,7 @@ export default class Locomotion {
 			}
 
 			if (stepLegIndex != -1) {
-				let stepTo = centerOfMassVGroundLevel.clone().add( rootBone.solverRotation.clone().multiply( this.footsteps[stepLegIndex].characterSpaceOffset ) );
+				let /*Vector3*/stepTo = centerOfMassVGroundLevel.clone().add( rootBone.solverRotation.clone().multiplyVector3( this.footsteps[stepLegIndex].characterSpaceOffset ) );
 				this.footsteps[stepLegIndex].stepSpeed = Random.range(this.stepSpeed, this.stepSpeed * 1.5);
 				this.footsteps[stepLegIndex].stepToFn(stepTo, forwardRotation);
 			}
@@ -282,8 +298,8 @@ export default class Locomotion {
 		this.footsteps[0].update(this.stepInterpolation, this.onLeftFootstep);
 		this.footsteps[1].update(this.stepInterpolation, this.onRightFootstep);
 
-		leftFootPosition = this.footsteps[0].position;
-		rightFootPosition = this.footsteps[1].position;
+		leftFootPosition = this.footsteps[0].position.clone();
+		rightFootPosition = this.footsteps[1].position.clone();
 
 		leftFootPosition = V3Tools.pointToPlane(leftFootPosition, leftLeg.lastBone.readPosition, rootUp);
 		rightFootPosition = V3Tools.pointToPlane(rightFootPosition, rightLeg.lastBone.readPosition, rootUp);
@@ -309,6 +325,9 @@ export default class Locomotion {
 		}
 	}
 
+
+
+
 	get leftFootstepPosition() {
 		return this.footsteps[0].position;
 	}
@@ -325,14 +344,17 @@ export default class Locomotion {
 		return this.footsteps[1].rotation;
 	}
 
+
+
+
 	stepBlocked(fromPosition, toPosition, rootPosition) {
 		if (this.blockingLayers == -1 || !this.blockingEnabled) return false;
 
-		let origin = fromPosition;
-		origin.y = rootPosition.y + this.raycastHeight + this.raycastRadius;
+		let /*Vector3*/origin = fromPosition;
+		origin.setY( rootPosition.y + this.raycastHeight + this.raycastRadius );
 
-		let direction = toPosition - origin;
-		direction.y = 0;
+		let direction = toPosition.clone().sub(origin);
+		direction.setY(0);
 
 		// @TODO : add raycast...
 		// THREE.Ray(origin, direction )
@@ -359,22 +381,28 @@ export default class Locomotion {
 
 	}
 
+
+
+
 	canStep() {
 		for (let f of this.footsteps) if (f.isStepping && f.stepProgress < 0.8) return false;
 		return true;
 	}
 
-	static getLineSphereCollision(lineStart, lineEnd, sphereCenter, sphereRadius) {
+
+
+
+	static getLineSphereCollision(/*Vector3*/lineStart, /*Vector3*/lineEnd, /*Vector3*/sphereCenter, /*float*/sphereRadius) {
 		let line = lineEnd.clone().sub( lineStart );
 		let toSphere = sphereCenter.clone().sub( lineStart );
-		let distToSphereCenter = toSphere.length;
+		let distToSphereCenter = toSphere.length();
 		let d = distToSphereCenter - sphereRadius;
 
-		if (d > line.length) return false;
+		if (d > line.length()) return false;
 
-		let q = Quaternion.LookRotation(line, toSphere);
+		let q = Quaternion.lookRotation(line, toSphere);
 
-		let toSphereRotated = q.clone().inverse().multiply( toSphere );
+		let toSphereRotated = q.clone().inverse().multiplyVector3( toSphere );
 
 		if (toSphereRotated.z < 0) {
 			return d < 0;

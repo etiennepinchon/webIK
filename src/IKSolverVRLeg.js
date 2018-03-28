@@ -64,15 +64,18 @@ export default class Leg extends BodyPart {
     this.warned = false;
 	}
 
-	onRead(positions, rotations, hasChest, hasNeck, hasShoulders, hasToes, rootIndex, index) {
-		let thighPos = positions[index];
-		let thighRot = rotations[index];
-		let calfPos = positions[index + 1];
-		let calfRot = rotations[index + 1];
-		let footPos = positions[index + 2];
-		let footRot = rotations[index + 2];
-		let toePos = positions[index + 3];
-		let toeRot = rotations[index + 3];
+
+
+
+	onRead(/*Vector3[]*/positions, /*Quaternion[]*/rotations, /*bool*/hasChest, /*bool*/hasNeck, /*bool*/hasShoulders, /*bool*/hasToes, /*int*/rootIndex, /*int*/index) {
+		let thighPos = positions[index].clone();
+		let thighRot = rotations[index].clone();
+		let calfPos = positions[index + 1].clone();
+		let calfRot = rotations[index + 1].clone();
+		let footPos = positions[index + 2].clone();
+		let footRot = rotations[index + 2].clone();
+		let toePos = positions[index + 3].clone();
+		let toeRot = rotations[index + 3].clone();
 
 		if (!this.initiated) {
 			this.hasToes = hasToes;
@@ -111,10 +114,16 @@ export default class Leg extends BodyPart {
 		}
 	}
 
+
+
+
 	preSolve() {
+		window._scene.updateMatrixWorld();
+
 		if (this.target) {
-			this.IKPosition = this.target.position.clone();
-			this.IKRotation = this.target.rotation.clone();
+			this.IKPosition = this.target.getWorldPosition();
+			let rot = this.target.getWorldQuaternion();
+			this.IKRotation = new Quaternion(rot.x, rot.y, rot.z, rot.w);
 		}
     else if (!this.warned) {
       this.warned = true;
@@ -123,6 +132,7 @@ export default class Leg extends BodyPart {
 
 		this.footPosition = this.foot.solverPosition.clone();
 		this.footRotation = this.foot.solverRotation.clone();
+
 		this.position = this.lastBone.solverPosition.clone();
 		this.rotation = this.lastBone.solverRotation.clone();
 
@@ -131,48 +141,55 @@ export default class Leg extends BodyPart {
 		}
 
 		if (this.positionWeight > 0) {
-			this.applyPositionOffset(Ithis.KPosition.clone().sub( this.position ), this.positionWeight);
+			this.applyPositionOffset(this.IKPosition.clone().sub( this.position ), this.positionWeight);
 		}
 
-		this.thighRelativeToPelvis = this.rootRotation.clone().inverse().multiply(  this.thigh.solverPosition.clone().sub( this.rootPosition) );
+		this.thighRelativeToPelvis = this.rootRotation.clone().inverse().multiplyVector3(  this.thigh.solverPosition.clone().sub( this.rootPosition) );
 		this.calfRelToThigh = this.thigh.solverRotation.clone().inverse().multiply( this.calf.solverRotation );
 
 		// Calculate bend plane normal
 		this.bendNormal = this.calf.solverPosition.clone().sub(this.thigh.solverPosition).cross(this.foot.solverPosition.clone().sub(this.calf.solverPosition));
-
   }
+
+
+
 
 	applyOffsets() {
 		this.applyPositionOffset(this.footPositionOffset.clone(), 1);
 		this.applyRotationOffset(this.footRotationOffset.clone(), 1);
 
     // Heel position offset
-		let fromTo = Quaternion.FromToRotation(this.footPosition.clone().sub(this.position), this.footPosition.clone().add( this.heelPositionOffset ).sub( this.position) );
+		let fromTo = Quaternion.fromToRotation(this.footPosition.clone().sub(this.position), this.footPosition.clone().add( this.heelPositionOffset ).sub( this.position) );
 
-		this.footPosition = this.position.clone().add( fromTo.clone().multiply( this.footPosition.clone().sub(this.position) ) );
-		this.footRotation = this.footRotation.clone().multiply( fromTo );
+		this.footPosition = this.position.clone().add( fromTo.clone().multiplyVector3( this.footPosition.clone().sub(this.position) ) );
+		this.footRotation = fromTo.clone().multiply( this.footRotation );
 
 		// Bend normal offset
 		let bAngle = 0;
 
 		if (this.bendGoal && this.bendGoalWeight > 0) {
-			let b = this.bendGoal.position.clone().sub(this.thigh.solverPosition).cross( this.foot.solverPosition.clone().sub(thigh.solverPosition) );
-			let l = Quaternion.LookRotation(this.bendNormal, this.thigh.solverPosition.clone().sub( foot.solverPosition ) );
-			let bRelative = l.clone().inverse().multiply(b);
+			window._scene.updateMatrixWorld();
+
+			let b = this.bendGoal.getWorldPosition().sub(this.thigh.solverPosition).cross( this.foot.solverPosition.clone().sub(thigh.solverPosition) );
+			let l = Quaternion.lookRotation(this.bendNormal, this.thigh.solverPosition.clone().sub( foot.solverPosition ) );
+			let bRelative = l.clone().inverse().multiplyVector3(b);
 			bAngle = Math.degrees(Math.atan2(bRelative.x, bRelative.z)) * this.bendGoalWeight;
 		}
 
 		let sO = this.swivelOffset + bAngle;
 
 		if (sO != 0) {
-			this.bendNormal = new Quaternion().setFromAxisAngle(this.thigh.solverPosition.clone().sub( this.lastBone.solverPosition), sO).multiply(this.bendNormal);
-			this.thigh.solverRotation = new Quaternion().setFromAxisAngle(this.thigh.solverRotation.clone().multiply(this.thigh.axis), -sO).multiply(this.thigh.solverRotation);
+			this.bendNormal = Quaternion.angleAxis(sO, this.thigh.solverPosition.clone().sub( this.lastBone.solverPosition)).multiply(this.bendNormal);
+			this.thigh.solverRotation = Quaternion.angleAxis(-sO, this.thigh.solverRotation.clone().multiplyVector3(this.thigh.axis)).multiply(this.thigh.solverRotation);
 		}
 
 	}
 
+
+
+
 	// Foot position offset
-	applyPositionOffset(offset, weight) {
+	applyPositionOffset(/*Vector3*/offset, weight) {
 		if (weight <= 0) return;
 		offset.multiplyScalar(weight);
 
@@ -181,8 +198,11 @@ export default class Leg extends BodyPart {
 		this.position.add(offset);
 	}
 
+
+
+
 	// Foot rotation offset
-	applyRotationOffset(offset, weight) {
+	applyRotationOffset(/*Quaternion*/offset, weight) {
     if (isNaN(offset.w)) {
       console.error('A22AA corrupt data offset.w', offset.w)
       throw new Error()
@@ -193,14 +213,16 @@ export default class Leg extends BodyPart {
 			offset = Quaternion.identity.lerp(offset, weight);
 		}
 
-		this.footRotation = offset.clone().multiply( this.footRotation.clone() );
-    this.rotation = offset.clone().multiply( this.rotation.clone() )
-		this.bendNormal = this.bendNormal.clone().multiply( offset );
+		this.footRotation = offset.clone().multiply( this.footRotation );
+    this.rotation = offset.clone().multiply( this.rotation )
+		this.bendNormal = offset.clone().multiplyVector3(this.bendNormal );
 		this.footPosition = this.position.add( offset.clone().multiply( this.footPosition.clone().sub( this.position) ) );
   }
 
-	solve() {
 
+
+
+	solve() {
     if (this.foot.solverRotation.w == undefined || isNaN(this.foot.solverRotation.w)) {
       console.error('AAA corrupt data rotation', this.foot)
       throw new Error()
@@ -210,31 +232,39 @@ export default class Leg extends BodyPart {
 		VirtualBone.solveTrigonometric(this.bones, 0, 1, 2, this.footPosition, this.bendNormal, 1);
 
 		// Rotate foot back to where it was before the last solving
-		this.rotateTo(this.foot, this.footRotation.clone());// <-- here
+		this.rotateTo(this.foot, this.footRotation.clone());
 
 		// Toes pass
 		if (!this.hasToes) return;
 
-		let b = this.foot.solverPosition.clone().multiply(this.thigh.solverPosition).cross( this.toes.solverPosition.clone().sub(this.foot.solverPosition) );
+		let /*Vector3*/b = this.foot.solverPosition.clone().sub(this.thigh.solverPosition).cross( this.toes.solverPosition.clone().sub(this.foot.solverPosition) );
 
 		VirtualBone.solveTrigonometric(this.bones, 0, 2, 3, this.position, b, 1);
 
 		// Fix calf twist relative to thigh
-		let calfRotation = this.thigh.solverRotation.clone().multiply( this.calfRelToThigh );
+		let /*Quaternion*/calfRotation = this.thigh.solverRotation.clone().multiply( this.calfRelToThigh );
 
-		let fromTo = Quaternion.FromToRotation(calfRotation.clone().multiply( this.calf.axis ), this.foot.solverPosition.clone().sub( this.calf.solverPosition) );
-		this.rotateTo(this.calf, fromTo.clone().multiply( calfRotation), 1);
+		let /*Quaternion*/fromTo = Quaternion.fromToRotation(calfRotation.clone().multiplyVector3( this.calf.axis ), this.foot.solverPosition.clone().sub( this.calf.solverPosition) );
+		this.rotateTo(this.calf, fromTo.clone().multiply(calfRotation), 1);
 
 		// Keep toe rotation fixed
 		this.toes.solverRotation = this.rotation.clone();
 	}
 
-	write(solvedPositions, solvedRotations) {// @TODO: ref return
+
+
+	// @TODO_CHECK: ref return
+	write(solvedPositions, solvedRotations) {
 		solvedRotations[this.index] = this.thigh.solverRotation.clone();
 		solvedRotations[this.index + 1] = this.calf.solverRotation.clone();
 		solvedRotations[this.index + 2] = this.foot.solverRotation.clone();
 		if (this.hasToes) solvedRotations[this.index + 3] = this.toes.solverRotation.clone();
+
+		return { solvedPositions, solvedRotations }
 	}
+
+
+
 
 	resetOffsets() {
 		this.footPositionOffset = Vector3.zero;

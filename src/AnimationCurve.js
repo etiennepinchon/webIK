@@ -6,6 +6,10 @@ export default class AnimationCurve {
       this.keys = keys;
 		}
 
+
+
+
+    // Evalute animation curve at position t.
     evaluate(t) {
       let keyframe0, keyframe1;
       for (let i = 0; i < this.keys.length; i++) {
@@ -34,14 +38,16 @@ export default class AnimationCurve {
       return a * keyframe0.value + b * m0 + c * m1 + d * keyframe1.value;
     }
 
-		addKey(time, value) {
-      // @TODO: reorder array
-      this.keys.push( new Keyframe(time, value, 0, 0) );
-    }
 
+
+    // @TODO: not necessary but could be done.
+		addKey(time, value) {}
     moveKey(index, key) {}
     removeKey(index) {}
     smoothTangents(index, weight) {}
+
+
+
 
     static linear(timeStart, valueStart, timeEnd, valueEnd) {
 			const num = (valueEnd - valueStart) / (timeEnd - timeStart);
@@ -51,6 +57,9 @@ export default class AnimationCurve {
 			];
 			return new AnimationCurve(keys);
 		}
+
+
+
 
 		static easeInOut(timeStart, valueStart, timeEnd, valueEnd) {
 			const keys = [

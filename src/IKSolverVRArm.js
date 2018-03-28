@@ -84,15 +84,18 @@ export default class Arm extends BodyPart {
     this.warned = false;
 	}
 
+
+
+
 	onRead(positions, rotations, hasChest, hasNeck, hasShoulders, hasToes, rootIndex, index) {
-		let shoulderPosition = positions[index];
-		let shoulderRotation = rotations[index];
-		let upperArmPosition = positions[index + 1];
-		let upperArmRotation = rotations[index + 1];
-		let forearmPosition = positions[index + 2];
-		let forearmRotation = rotations[index + 2];
-		let handPosition = positions[index + 3];
-		let handRotation = rotations[index + 3];
+		let shoulderPosition = positions[index].clone();
+		let shoulderRotation = rotations[index].clone();
+		let upperArmPosition = positions[index + 1].clone();
+		let upperArmRotation = rotations[index + 1].clone();
+		let forearmPosition = positions[index + 2].clone();
+		let forearmRotation = rotations[index + 2].clone();
+		let handPosition = positions[index + 3].clone();
+		let handRotation = rotations[index + 3].clone();
 
 		if (!this.initiated) {
 			this.IKPosition = handPosition;
@@ -101,21 +104,22 @@ export default class Arm extends BodyPart {
 
 			this.hasShoulder = hasShoulders;
 
-			this.bones = new Array(this.hasShoulder? 4: 3);
+			this.bones = new Array(this.hasShoulder ? 4 : 3);
 
 			if (this.hasShoulder) {
 				this.bones[0] = new VirtualBone(shoulderPosition, shoulderRotation);
 				this.bones[1] = new VirtualBone(upperArmPosition, upperArmRotation);
 				this.bones[2] = new VirtualBone(forearmPosition, forearmRotation);
 				this.bones[3] = new VirtualBone(handPosition, handRotation);
-			} else {
+			}
+			else {
 				this.bones[0] = new VirtualBone(upperArmPosition, upperArmRotation);
 				this.bones[1] = new VirtualBone(forearmPosition, forearmRotation);
 				this.bones[2] = new VirtualBone(handPosition, handRotation);
 			}
 
-			this.chestForwardAxis = this.rootRotation.clone().inverse().multiply( rotations[0].clone().multiply( Vector3.forward) );
-			this.chestUpAxis = this.rootRotation.clone().inverse().multiply( rotations[0].clone().multiply( Vector3.up ) );
+			this.chestForwardAxis = this.rootRotation.clone().inverse().multiplyVector3( rotations[0].clone().multiplyVector3( Vector3.forward) );
+			this.chestUpAxis = this.rootRotation.clone().inverse().multiplyVector3( rotations[0].clone().multiplyVector3( Vector3.up ) );
 		}
 
 		if (this.hasShoulder) {
@@ -123,21 +127,28 @@ export default class Arm extends BodyPart {
 			this.bones[1].read(upperArmPosition, upperArmRotation);
 			this.bones[2].read(forearmPosition, forearmRotation);
 			this.bones[3].read(handPosition, handRotation);
-		} else {
+		}
+		else {
 			this.bones[0].read(upperArmPosition, upperArmRotation);
 			this.bones[1].read(forearmPosition, forearmRotation);
 			this.bones[2].read(handPosition, handRotation);
 		}
 	}
 
+
+
+
 	preSolve() {
+		window._scene.updateMatrixWorld();
+
 		if (this.target) {
-			this.IKPosition = this.target.position.clone();
-			this.IKRotation = this.target.quaternion.clone();
+			this.IKPosition = this.target.getWorldPosition();
+			let rot = this.target.getWorldQuaternion();
+			this.IKRotation = new Quaternion(rot.x, rot.y, rot.z, rot.w);
 		}
     else if (!this.warned) {
       this.warned = true;
-      console.warn('no arm target')
+      console.warn('no arm target');
     }
 
 		this.position = V3Tools.lerp(this.hand.solverPosition, this.IKPosition, this.positionWeight);
@@ -147,14 +158,20 @@ export default class Arm extends BodyPart {
 		this.forearmRelToUpperArm = this.upperArm.solverRotation.clone().inverse().multiply( this.forearm.solverRotation );
 	}
 
+
+
+
 	applyOffsets() {
 		this.position.add( this.handPositionOffset );
 	}
 
+
+
+
 	solve(isLeft) {
-		this.chestRotation = Quaternion.LookRotation(this.rootRotation.clone().multiply( this.chestForwardAxis), this.rootRotation.clone().multiply(this.chestUpAxis) );
-		this.chestForward = this.chestRotation.clone().multiply( Vector3.forward );
-		this.chestUp = this.chestRotation.clone().multiply( Vector3.up );
+		this.chestRotation = Quaternion.lookRotation(this.rootRotation.clone().multiplyVector3( this.chestForwardAxis), this.rootRotation.clone().multiplyVector3(this.chestUpAxis) );
+		this.chestForward = this.chestRotation.clone().multiplyVector3( Vector3.forward );
+		this.chestUp = this.chestRotation.clone().multiplyVector3( Vector3.up );
 
 		//Debug.DrawRay (Vector3.up * 2f, chestForward);
 		//Debug.DrawRay (Vector3.up * 2f, chestUp);
@@ -163,18 +180,18 @@ export default class Arm extends BodyPart {
 		if (this.hasShoulder && this.shoulderRotationWeight > 0) {
 			switch(this.shoulderRotationMode) {
 			case ShoulderRotationMode.YawPitch:
-				let sDir = this.position.clone().sub( this.shoulder.solverPosition );
-				sDir = sDir.clone().normalize();
+				let /*Vector3*/sDir = this.position.clone().sub( this.shoulder.solverPosition );
+				sDir = sDir.normalize();
 
 				// Shoulder Yaw
-				let yOA = isLeft ? this.yawOffsetAngle : -this.yawOffsetAngle;
-				let yawOffset = new Quaternion().setFromAxisAngle(this.chestUp, (isLeft? -90: 90) + yOA);
-				let workingSpace = yawOffset.clone().multiply( this.chestRotation );
+				let /*float*/yOA = isLeft ? this.yawOffsetAngle : -this.yawOffsetAngle;
+				let /*Quaternion*/yawOffset = Quaternion.angleAxis((isLeft? -90: 90) + yOA, this.chestUp);
+				let /*Quaternion*/workingSpace = yawOffset.clone().multiply( this.chestRotation );
 
 				//Debug.DrawRay(Vector3.up * 2f, workingSpace * Vector3.forward);
 				//Debug.DrawRay(Vector3.up * 2f, workingSpace * Vector3.up);
 
-				let sDirWorking = workingSpace.clone().inverse().multiply( sDir );
+				let /*Vector3*/sDirWorking = workingSpace.clone().inverse().multiplyVector3( sDir );
 
 				//Debug.DrawRay(Vector3.up * 2f, sDirWorking);
 
@@ -187,9 +204,9 @@ export default class Arm extends BodyPart {
 				yaw -= yOA;
 				yaw = this.damperValue(yaw, -45 - yOA, 45 - yOA, 0.7); // back, forward
 
-				let f = this.shoulder.solverRotation.clone().multiply( this.shoulder.axis );
-				let t = workingSpace.clone().multiply( new Quaternion().setFromAxisAngle(Vector3.up, yaw).multiply(Vector3.forward) );
-				let yawRotation = Quaternion.FromToRotation(f, t);
+				let /*Vector3*/f = this.shoulder.solverRotation.clone().multiplyVector3( this.shoulder.axis );
+				let /*Vector3*/t = workingSpace.clone().multiply( Quaternion.angleAxis(yaw, Vector3.up).multiplyVector3(Vector3.forward) );
+				let /*Quaternion*/yawRotation = Quaternion.fromToRotation(f, t);
 
 				//Debug.DrawRay(Vector3.up * 2f, f, Color.red);
 				//Debug.DrawRay(Vector3.up * 2f, t, Color.green);
@@ -199,17 +216,18 @@ export default class Arm extends BodyPart {
 				//Debug.DrawRay(Vector3.up * 2f, yawRotation * Vector3.right, Color.red);
 
 				// Shoulder Pitch
-				let pitchOffset = new Quaternion().setFromAxisAngle(this.chestUp, isLeft? -90: 90);
+				let pitchOffset = Quaternion.angleAxis(isLeft? -90: 90, this.chestUp);
 				workingSpace = pitchOffset.clone().multiply( this.chestRotation );//Quaternion
-				workingSpace = new Quaternion().setFromAxisAngle(this.chestForward, isLeft? this.pitchOffsetAngle: - this.pitchOffsetAngle).multiply(workingSpace);
+				workingSpace = Quaternion.angleAxis(isLeft ? this.pitchOffsetAngle : - this.pitchOffsetAngle, this.chestForward).multiply(workingSpace);
 
 
 
 				//Debug.DrawRay(Vector3.up * 2f, workingSpace * Vector3.forward);
 				//Debug.DrawRay(Vector3.up * 2f, workingSpace * Vector3.up);
 
-				sDir = this.position.clone().sub( this.shoulder.solverPosition.clone().add( this.chestRotation.clone().multiply( (isLeft ? Vector3.right : Vector3.left) ).multiplyScalar(this.mag) )  );
-				sDirWorking = workingSpace.clone().inverse().multiply( sDir );
+				let rot = this.chestRotation.clone().multiplyVector3( (isLeft ? Vector3.right : Vector3.left) ).multiplyScalar(this.mag)
+				sDir = this.position.clone().sub( this.shoulder.solverPosition.clone().add( rot )  );
+				sDirWorking = workingSpace.clone().inverse().multiplyVector3( sDir );
 
 				//Debug.DrawRay(Vector3.up * 2f, sDirWorking);
 
@@ -217,7 +235,7 @@ export default class Arm extends BodyPart {
 
 				pitch -= this.pitchOffsetAngle;
 				pitch = this.damperValue(pitch, -45 - this.pitchOffsetAngle, 45 - this.pitchOffsetAngle);
-				let pitchRotation = new Quaternion().setFromAxisAngle(workingSpace.clone().multiply( Vector3.right ), -pitch);
+				let pitchRotation = Quaternion.angleAxis(-pitch, workingSpace.clone().multiplyVector3( Vector3.right ));
 
 				//Debug.DrawRay(Vector3.up * 2f, pitchRotation * Vector3.forward, Color.green);
 				//Debug.DrawRay(Vector3.up * 2f, pitchRotation * Vector3.up, Color.green);
@@ -227,7 +245,7 @@ export default class Arm extends BodyPart {
 				if (this.shoulderRotationWeight * this.positionWeight < 1)
 					sR = Quaternion.identity.lerp(sR, this.shoulderRotationWeight * this.positionWeight);
 
-        console.log(this.bones[0].solverRotation)
+        //console.log(this.bones[0].solverRotation)
 
     		VirtualBone.rotateBy(this.bones, sR);
 
@@ -240,46 +258,46 @@ export default class Arm extends BodyPart {
 				VirtualBone.solveTrigonometric(this.bones, 1, 2, 3, this.position, this.getBendNormal( this.position.clone().sub( this.upperArm.solverPosition) ), this.positionWeight);
 
 				let p = Math.clamp(pitch * 2 * this.positionWeight, 0, 180);
-				this.shoulder.solverRotation = new Quaternion().setFromAxisAngle(this.shoulder.solverRotation.clone().multiply( (isLeft? this.shoulder.axis: this.shoulder.axis.negate() ) ), p).multiply( this.shoulder.solverRotation );
-				this.upperArm.solverRotation = new Quaternion().setFromAxisAngle(this.upperArm.solverRotation.clone().multiply( (isLeft? this.upperArm.axis: this.upperArm.axis.negate() ) ), p).multiply( this.upperArm.solverRotation );
+				this.shoulder.solverRotation = Quaternion.angleAxis(p, this.shoulder.solverRotation.clone().multiplyVector3( (isLeft ? this.shoulder.axis : this.shoulder.axis.negate() ) )).multiply( this.shoulder.solverRotation );
+				this.upperArm.solverRotation = Quaternion.angleAxis(p, this.upperArm.solverRotation.clone().multiplyVector3( (isLeft ? this.upperArm.axis : this.upperArm.axis.negate() ) )).multiply( this.upperArm.solverRotation );
 
 				// Additional pass to reach with the shoulders
 				//IKSolverTrigonometric.SolveVirtual(bones, 0, 1, 3, position, Vector3.Cross(upperArm.solverPosition - shoulder.solverPosition, hand.solverPosition - shoulder.solverPosition), pW * 1f);
 			break;
 			case ShoulderRotationMode.FromTo:
-				let shoulderRotation = this.shoulder.solverRotation;
+				let /*Quaternion*/shoulderRotation = this.shoulder.solverRotation.clone();
 
-				let r = Quaternion.FromToRotation(this.upperArm.solverPosition.clone().sub( this.shoulder.solverPosition).normalize().add( this.chestForward), this.position.clone().sub( this.shoulder.solverPosition ) );
+				let /*Quaternion*/r = Quaternion.fromToRotation(this.upperArm.solverPosition.clone().sub( this.shoulder.solverPosition).normalize().add(this.chestForward), this.position.clone().sub( this.shoulder.solverPosition ) );
 				r = Quaternion.identity.slerp(r, 0.5 * this.shoulderRotationWeight * this.positionWeight);
 				VirtualBone.rotateBy(this.bones, r);
 
 				VirtualBone.solveTrigonometric(this.bones, 0, 2, 3, this.position, this.forearm.solverPosition.clone().sub( this.shoulder.solverPosition ).cross( this.hand.solverPosition.clone().sub( this.shoulder.solverPosition) ), 0.5 * this.shoulderRotationWeight * this.positionWeight);
-				VirtualBone.solveTrigonometric(this.bones, 1, 2, 3, this.position, this.getBendNormal(this.position.clone().sub(upperArm.solverPosition) ), this.positionWeight);
+				VirtualBone.solveTrigonometric(this.bones, 1, 2, 3, this.position, this.getBendNormal(this.position.clone().sub(this.upperArm.solverPosition) ), this.positionWeight);
 
 				// Twist shoulder and upper arm bones when holding hands up
-				let q = Quaternion.LookRotation(this.chestUp, this.chestForward).clone().inverse();
-				let vBefore = q.clone().multiply( this.shoulderRotation.clone().multiply( this.shoulder.axis) );
-				let vAfter = q.clone().multiply( this.shoulder.solverRotation.clone().multiply( this.shoulder.axis) );
-				let angleBefore = Math.degrees( Math.atan2(vBefore.x, vBefore.z) );
-				let angleAfter = Math.degrees( Math.atan2(vAfter.x, vAfter.z) );
-				let pitchAngle = Math.deltaAngle(angleBefore, angleAfter);
+				let /*Quaternion*/q = Quaternion.lookRotation(this.chestUp, this.chestForward).clone().inverse();
+				let /*Vector3*/vBefore = q.clone().multiplyVector3( this.shoulderRotation.clone().multiplyVector3( this.shoulder.axis) );
+				let /*Vector3*/vAfter = q.clone().multiplyVector3( this.shoulder.solverRotation.clone().multiplyVector3( this.shoulder.axis) );
+				let /*float*/angleBefore = Math.degrees( Math.atan2(vBefore.x, vBefore.z) );
+				let /*float*/angleAfter = Math.degrees( Math.atan2(vAfter.x, vAfter.z) );
+				let /*float*/pitchAngle = Math.deltaAngle(angleBefore, angleAfter);
 				if (isLeft) pitchAngle = -pitchAngle;
 				pitchAngle = Math.clamp(pitchAngle * 2 * positionWeight, 0, 180);
 
-				this.shoulder.solverRotation = new Quaternion().setFromAxisAngle(this.shoulder.solverRotation.clone().multiply( (isLeft? this.shoulder.axis: this.shoulder.axis.negate() ) ), pitchAngle).multiply( this.shoulder.solverRotation );
-				this.upperArm.solverRotation = new Quaternion().setFromAxisAngle(this.upperArm.solverRotation.clone().multiply( (isLeft? this.upperArm.axis: this.upperArm.axis.negate() ) ), pitchAngle).multiply( this.upperArm.solverRotation );
+				this.shoulder.solverRotation = Quaternion.angleAxis(pitchAngle, this.shoulder.solverRotation.clone().multiplyVector3( (isLeft? this.shoulder.axis: this.shoulder.axis.negate() ) ) ).multiply( this.shoulder.solverRotation );
+				this.upperArm.solverRotation = Quaternion.angleAxis(pitchAngle, this.upperArm.solverRotation.clone().multiplyVector3( (isLeft? this.upperArm.axis: this.upperArm.axis.negate() ) ) ).multiply( this.upperArm.solverRotation );
 			break;
 			}
 		}
 		else {
 			// Solve arm trigonometric
-			VirtualBone.solveTrigonometric(this.bones, 1, 2, 3, this.position, this.getBendNormal(this.position - this.upperArm.solverPosition), this.positionWeight);
+			VirtualBone.solveTrigonometric(this.bones, 1, 2, 3, this.position, this.getBendNormal(this.position.clone().sub(this.upperArm.solverPosition)), this.positionWeight);
 		}
 
 		// Fix forearm twist relative to upper arm
-		let forearmFixed = this.upperArm.solverRotation.clone().multiply( this.forearmRelToUpperArm );
-		let fromTo = Quaternion.FromToRotation(forearmFixed.clone().multiply( this.forearm.axis), this.hand.solverPosition.clone().sub(this.forearm.solverPosition));
-    this.rotateTo(this.forearm, fromTo.clone().multiply( forearmFixed), this.positionWeight);
+		let /*Quaternion*/forearmFixed = this.upperArm.solverRotation.clone().multiply( this.forearmRelToUpperArm );
+		let /*Quaternion*/fromTo = Quaternion.fromToRotation(forearmFixed.clone().multiplyVector3( this.forearm.axis), this.hand.solverPosition.clone().sub(this.forearm.solverPosition));
+    this.rotateTo(this.forearm, fromTo.clone().multiply(forearmFixed), this.positionWeight);
 
 		// Set hand rotation
 		if (this.rotationWeight >= 1) {
@@ -290,16 +308,27 @@ export default class Arm extends BodyPart {
 		}
 	}
 
+
+
+
 	resetOffsets() {
 		this.handPositionOffset = Vector3.zero;
 	}
 
-	write(solvedPositions, solvedRotations) {
+
+
+	// @TODO_CHECK : refs
+	write(/*ref Vector3[]*/solvedPositions, /*ref Quaternion[]*/solvedRotations) {
 		if (this.hasShoulder) solvedRotations[this.index] = this.shoulder.solverRotation.clone();
 		solvedRotations[this.index + 1] = this.upperArm.solverRotation.clone();
 		solvedRotations[this.index + 2] = this.forearm.solverRotation.clone();
 		solvedRotations[this.index + 3] = this.hand.solverRotation.clone();
+
+		return { solvedPositions, solvedRotations };
 	}
+
+
+
 
 	damperValue(value, min, max, weight = 1) {
 		let range = max - min;
@@ -318,45 +347,54 @@ export default class Arm extends BodyPart {
 		return Math.lerp(min, max, tEased);
 	}
 
+
+
+
 	getBendNormal(dir) {
-		if (this.bendGoal != null) this.bendDirection = this.bendGoal.position.clone().sub( this.bones[0].solverPosition );
+		if (this.bendGoal) {
+			window._scene.updateMatrixWorld();
+			this.bendDirection = this.bendGoal.getWorldPosition().sub( this.bones[0].solverPosition );
+		}
 
 		if (this.bendGoalWeight < 1) {
-			let armDir = this.bones[0].solverRotation.clone().multiply( this.bones[0].axis );
+			let /*Vector3*/armDir = this.bones[0].solverRotation.clone().multiplyVector3( this.bones[0].axis );
 
       if (this.bones[0].solverRotation.w == undefined) {
         console.error('corrupt data this.bones[0].solverRotation', this.bones[0].solverRotation)
         throw new Error()
       }
 
-			let f = Vector3.down;
-			let t = this.chestRotation.clone().inverse().multiply( dir.normalize() ).add( Vector3.forward);
-			let q = Quaternion.FromToRotation(f, t);
+			let /*Vector3*/f = Vector3.down;
+			let /*Vector3*/t = this.chestRotation.clone().inverse().multiply( dir.clone().normalize() ).add( Vector3.forward);
+			let /*Quaternion*/q = Quaternion.fromToRotation(f, t);
 
-			let b = q.clone().multiply( Vector3.back );
+			let /*Vector3*/b = q.clone().multiplyVector3( Vector3.back );
 
-			f = this.chestRotation.clone().inverse().multiply( armDir );
-			t = this.chestRotation.clone().inverse().multiply( dir );
-			q = Quaternion.FromToRotation(f, t);
-			b = q.clone().multiply( b );
+			f = this.chestRotation.clone().inverse().multiplyVector3( armDir );
+			t = this.chestRotation.clone().inverse().multiplyVector3( dir );
+			q = Quaternion.fromToRotation(f, t);
+			b = q.clone().multiplyVector3( b );
 
-			b = this.chestRotation.clone().multiply( b );
+			b = this.chestRotation.clone().multiplyVector3( b );
 
 			b.add(armDir);
-			b.sub(this.rotation.clone().multiply( this.wristToPalmAxis ) );
-			b.sub(this.rotation.clone().multiply( this.palmToThumbAxis ).multiplyScalar( 0.5 ) );
+			b.sub(this.rotation.clone().multiplyVector3( this.wristToPalmAxis ) );
+			b.sub(this.rotation.clone().multiplyVector3( this.palmToThumbAxis ).multiplyScalar( 0.5 ) );
 
 			if (this.bendGoalWeight > 0) {
 				b = b.slerp(this.bendDirection, this.bendGoalWeight);
 			}
 
-			if (this.swivelOffset != 0) b = new Quaternion().setFromAxisAngle(dir.negate(), this.swivelOffset).multiply( b );
+			if (this.swivelOffset != 0) b = Quaternion.angleAxis(this.swivelOffset, dir.negate()).multiplyVector3( b );
 
-			return b.cross(dir);
+			return b.clone().cross(dir);
 		}
 
-		return bendDirection.cross(dir);
+		return bendDirection.clone().cross(dir);
 	}
+
+
+
 
 	visualize(bone1, bone2, bone3, color) {
 		//Debug.DrawLine(bone1.solverPosition, bone2.solverPosition, color);

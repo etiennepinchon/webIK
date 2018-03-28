@@ -29,47 +29,62 @@ export default class Footstep {
 		this.reset(rootRotation, footPosition, footRotation);
 	}
 
+
+
+
 	reset(rootRotation, footPosition, footRotation) {
-		this.position = footPosition;
-		this.rotation = footRotation;
+		this.position = footPosition.clone();
+		this.rotation = footRotation.clone();
 		this.stepFrom = this.position;
 		this.stepTo = this.position;
 		this.stepFromRot = this.rotation;
 		this.stepToRot = this.rotation;
-		this.stepToRootRot = rootRotation;
+		this.stepToRootRot = rootRotation.clone();
 		this.stepProgress = 1;
 		this.footRelativeToRoot = rootRotation.clone().inverse().multiply( this.rotation );
 	}
 
-	stepToFn(p, rootRotation) {
+
+
+
+	stepToFn(/*Vector3*/p, /*Quaternion*/rootRotation) {
 		this.stepFrom = this.position;
-		this.stepTo = p;
+		this.stepTo = p.clone();
 		this.stepFromRot = this.rotation;
-		this.stepToRootRot = rootRotation;
+		this.stepToRootRot = rootRotation.clone();
 		this.stepToRot = rootRotation.clone().multiply( this.footRelativeToRoot );
 		this.stepProgress = 0;
 	}
 
-	updateStepping(p, rootRotation, speed) {
+
+
+
+	updateStepping(/*Vector3*/p, /*Quaternion*/rootRotation, /*float*/speed) {
 		this.stepTo = this.stepTo.lerp (p, Time.deltaTime * speed);
-		this.stepToRot = Quaternion.Lerp (this.stepToRot, rootRotation.clone().multiply( this.footRelativeToRoot ), Time.deltaTime * speed);
+		this.stepToRot = Quaternion.lerp (this.stepToRot, rootRotation.clone().multiply( this.footRelativeToRoot ), Time.deltaTime * speed);
 
 		this.stepToRootRot = this.stepToRot.clone().multiply( this.footRelativeToRoot.clone().inverse() );
 	}
 
-	updateStanding(rootRotation, minAngle, speed) {
+
+
+
+	updateStanding(/*Quaternion*/rootRotation, /*float*/minAngle, /*float*/speed) {
 		if (speed <= 0 || minAngle >= 180) return;
 
-		let r = rootRotation.clone().multiply( this.footRelativeToRoot.clone() );
+		let /*Quaternion*/r = rootRotation.clone().multiply( this.footRelativeToRoot );
 
-		let angle = Quaternion.Angle (this.rotation.clone(), r);
+		let /*float*/angle = Quaternion.angle(this.rotation, r);
 
 		if (angle > minAngle){
-			this.rotation = this.rotation.clone().slerp(r, Math.min(Time.deltaTime * speed * (1 - this.supportLegW), angle -minAngle));
+			this.rotation = Quaternion.rotateTowards(this.rotation, r, Math.min(Time.deltaTime * speed * (1 - this.supportLegW), angle -minAngle));
 		}
 	}
 
-	update(interpolation, onStep) {
+
+
+
+	update(/*InterpolationMode*/interpolation, /*Event*/onStep) {
 		let supportLegWTarget = this.isSupportLeg ? 1 : 0;
 
 		this.supportLegW = Math.smoothDamp(this.supportLegW, supportLegWTarget, this.supportLegWV, 0.2);
@@ -82,7 +97,7 @@ export default class Footstep {
 
 		let stepProgressSmooth = Interp.float(this.stepProgress, interpolation);
 
-		this.position = this.stepFrom.lerp(this.stepTo, stepProgressSmooth);
-		this.rotation = this.stepFromRot.lerp(this.stepToRot, stepProgressSmooth);
+		this.position = this.stepFrom.clone().lerp(this.stepTo, stepProgressSmooth);
+		this.rotation = this.stepFromRot.clone().lerp(this.stepToRot, stepProgressSmooth);
 	}
 }

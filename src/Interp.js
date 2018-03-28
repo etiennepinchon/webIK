@@ -127,11 +127,17 @@ export class Interp {
 		return interpT;
 	}
 
+
+
+
 	/// Interpolate between two verctors by InterpolationMode mode
 	static v3(v1, v2, t, mode) {
 		let interpT = Interp.float(t, mode);
-		return ((1 - interpT) * v1) + (interpT * v2);
+		return (v1.clone().multiplyScalar(1 - interpT)).add( v2.clone().multiplyScalar(interpT) );
 	}
+
+
+
 
 	/// Linear interpolation of value towards target.
 	static lerpValue(value, target, increaseSpeed, decreaseSpeed) {
@@ -139,6 +145,9 @@ export class Interp {
 		if (value < target) return Math.clamp(value + Time.deltaTime * increaseSpeed, -Infinity, target);
 		else return Math.clamp(value - Time.deltaTime * decreaseSpeed, target, Infinity);
 	}
+
+
+
 
 	static none (t, b, c) { // time, b, distance,
 		return b + c * (t);

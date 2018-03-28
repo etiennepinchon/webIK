@@ -42,6 +42,12 @@ AFRAME.registerComponent('fbx-model', {
 
 
 
+import Test from './test';
+new Test();
+
+
+
+
 window.Time = {};
 Time.deltaTime = 0;
 
@@ -67,7 +73,7 @@ AFRAME.registerComponent('avatar', {
       console.log(this.headTarget, this.leftHandTarget, this.rightHandTarget)
 
       this.sceneEl = this.el.sceneEl;
-      this.scene = this.el.sceneEl.object3D;
+      this.scene = window._scene = this.el.sceneEl.object3D;
       setTimeout(()=>this.setUp(), 0);
 
       // Debug tick count
@@ -85,12 +91,16 @@ AFRAME.registerComponent('avatar', {
   tick(t, dt) {
     Time.deltaTime = dt;
 
+
+
     // this.count++;
     // if (this.count > this.maxCount) return;
     if (this.ik) this.ik.tick();
   },
 
   tock(t, dt) {
+    //window._scene.updateMatrixWorld();
+
     //if (this.count > this.maxCount) return;
     if (this.ik) this.ik.tock();
   },

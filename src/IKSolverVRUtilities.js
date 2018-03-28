@@ -33,8 +33,11 @@ export class VirtualBone {
   	this.sqrMag = 0;
     this.axis = new Vector3();
 
-		this.read(position, rotation);
+		this.read(position.clone(), rotation.clone());
 	}
+
+
+
 
 	read(position, rotation) {
 		this.readPosition = position;
@@ -43,50 +46,48 @@ export class VirtualBone {
 		this.solverRotation = rotation;
 	}
 
-	static swingRotation(bones, index, swingTarget, weight = 1) {
+
+
+
+	static swingRotation(/*VirtualBone[]*/bones, /*int*/index, /*Vector3*/swingTarget, /*float*/weight = 1) {
 		if (weight <= 0) return;
 
-		let r = Quaternion.FromToRotation(bones[index].solverRotation.clone().multiply(bones[index].axis), swingTarget.clone().sub(bones[index].solverPosition) );
-
-		//	console.log(r, bones[0].solverRotation)
+		let from = bones[index].solverRotation.clone().multiplyVector3(bones[index].axis);
+		let to = swingTarget.clone().sub(bones[index].solverPosition);
+		let r = Quaternion.fromToRotation(from, to);
 		if (weight < 1) r = Quaternion.identity.lerp(r, weight);
 
 		for (let i = index; i < bones.length; i++) {
-
-
 			if (bones[i].solverRotation.w == undefined|| isNaN(bones[i].solverRotation.w)) {
 				console.error('pre corrupt data bones[i].solverRotation.w', bones[i].solverRotation)
 				throw new Error()
 			}
 
-
-
-
-			bones[i].solverRotation = r.clone().multiply(bones[i].solverRotation.clone());
-
-
+			bones[i].solverRotation = r.clone().multiply( bones[i].solverRotation );
 
 			if (bones[i].solverRotation.w == undefined|| isNaN(bones[i].solverRotation.w)) {
 				console.error('corrupt data bones[i].solverRotation.w', bones[i].solverRotation)
 				throw new Error()
 			}
-
-
-
 		}
 	}
 
+
+
+
 	// Calculates bone lengths and axes, returns the length of the entire chain
-	static preSolve(bones) {
+	// TODO_CHECK ref bones
+	static preSolve(/*ref VirtualBone[]*/bones) {
 		let length = 0;
 
 		for (let i = 0; i < bones.length; i++) {
-			if (i < bones.Length - 1) {
+			if (i < bones.length - 1) {
 				bones[i].sqrMag = bones[i + 1].solverPosition.clone().sub(bones[i].solverPosition).lengthSq();
 				bones[i].length = Math.sqrt(bones[i].sqrMag);
 				length += bones[i].length;
 
-				bones[i].axis = bones[i].solverRotation.clone().inverse().multiply(bones[i + 1].solverPosition.clone().sub(bones[i].solverPosition));
+				let pos = bones[i + 1].solverPosition.clone().sub(bones[i].solverPosition);
+				bones[i].axis = bones[i].solverRotation.clone().inverse().multiplyVector3(pos);
 
 				if (bones[i].solverRotation.w == undefined|| isNaN(bones[i].solverRotation.w)) {
 					console.error('corrupt data bones[i].solverRotation.w', bones[i].solverRotation)
@@ -103,19 +104,21 @@ export class VirtualBone {
 		return length;
 	}
 
-	static rotateAroundPoint(bones, index, point, rotation) {
 
+
+
+	static rotateAroundPoint(/*VirtualBone[]*/bones, index, point, rotation) {
 		for (let i = index; i < bones.length; i++) {
-			if (bones[i] != null) {
-				let dir = bones[i].solverPosition.clone().sub(point);
-				bones[i].solverPosition = point.clone().add( rotation.clone().multiply(dir) );
+			if (bones[i]) {
+				let/*Vector3*/ dir = bones[i].solverPosition.clone().sub(point);
+				bones[i].solverPosition = point.clone().add( rotation.clone().multiplyVector3(dir) );
 
 				if (bones[i].solverRotation.w == undefined|| isNaN(bones[i].solverRotation.w)) {
 					console.error('corrupt data bones[i].solverRotation.w', bones[i].solverRotation, rotation)
 					throw new Error()
 				}
-				let qua = bones[i].solverRotation.clone().multiply( rotation.clone() )
-				bones[i].solverRotation = qua
+
+				bones[i].solverRotation = bones[i].solverRotation.clone().multiply( rotation )
 
 				if (bones[i].solverRotation.w == undefined|| isNaN(bones[i].solverRotation.w)) {
 					console.error('corrupt data bones[i].solverRotation.w', bones[i].solverRotation, rotation)
@@ -127,12 +130,15 @@ export class VirtualBone {
 		}
 	}
 
+
+
+
 	static rotateIndexBy(bones, index, rotation) {
 		for (let i = index; i < bones.length; i++) {
-			if (bones[i] != null) {
+			if (bones[i]) {
 				let dir = bones[i].solverPosition.clone().sub( bones[index].solverPosition );
-				bones[i].solverPosition = bones[index].solverPosition.clone().add( rotation.clone().multiply(dir) );
-				bones[i].solverRotation = bones[i].solverRotation.clone().multiply( rotation.clone() );
+				bones[i].solverPosition = bones[index].solverPosition.clone().add( rotation.clone().multiplyVector3(dir) );
+				bones[i].solverRotation = bones[i].solverRotation.clone().multiply( rotation );
 
 				if (bones[i].solverRotation.w == undefined|| isNaN(bones[i].solverRotation.w)) {
 					console.error('corrupt data bones[i].solverRotation.w', rotation)
@@ -142,15 +148,18 @@ export class VirtualBone {
 		}
 	}
 
+
+
+
 	static rotateBy(bones, rotation) {
 		for (let i = 0; i < bones.length; i++) {
-			if (bones[i] != null) {
+			if (bones[i]) {
 				if (i > 0) {
 					let dir = bones[i].solverPosition.clone().sub( bones[0].solverPosition );
-					bones[i].solverPosition = bones[0].solverPosition.clone().add( rotation.clone().multiply( dir ) );
+					bones[i].solverPosition = bones[0].solverPosition.clone().add( rotation.clone().multiplyVector3( dir ) );
 				}
 
-				bones[i].solverRotation = bones[i].solverRotation.clone().multiply( rotation.clone() );
+				bones[i].solverRotation = bones[i].solverRotation.clone().multiply( rotation );
 
 				if (bones[i].solverRotation.w == undefined || isNaN(bones[i].solverRotation.w)) {
 					console.error('corrupt data bones[i].solverRotation.w', i)
@@ -161,17 +170,19 @@ export class VirtualBone {
 		}
 	}
 
+
+
 	static rotateTo(bones, index, rotation) {
-		let q = QuaTools.fromToRotation(bones[index].solverRotation.clone(), rotation);
+		let q = QuaTools.fromToRotation(bones[index].solverRotation, rotation);
 
 		this.rotateAroundPoint(bones, index, bones[index].solverPosition, q);
 	}
 
+
+
 	/// Solve the bone chain virtually using both solverPositions and SolverRotations. This will work the same as IKSolverTrigonometric.Solve.
-	static solveTrigonometric(bones, first, second, third, targetPosition, bendNormal, weight) {
-
+	static solveTrigonometric(/*VirtualBone[]*/bones, /*int*/first, /*int*/second, /*int*/third, /*Vector3*/targetPosition, /*Vector3*/bendNormal, /*float*/weight) {
 		if (weight <= 0) return;
-
 
 		// Direction of the limb in solver
 		targetPosition = bones[third].solverPosition.clone().lerp(targetPosition, weight);
@@ -180,7 +191,7 @@ export class VirtualBone {
 
 		// Distance between the first and the last transform solver positions
 		const sqrMag = dir.lengthSq();
-		if (sqrMag == 0) return;
+		if (sqrMag === 0) return;
 		let length = Math.sqrt(sqrMag);
 
 		let sqrMag1 = bones[second].solverPosition.clone().sub(bones[first].solverPosition).lengthSq();
@@ -193,9 +204,8 @@ export class VirtualBone {
 		let toBendPoint = this.getDirectionToBendPoint(dir, length, bendDir, sqrMag1, sqrMag2);
 
 		// Position the second transform
-		let q1 = Quaternion.FromToRotation(bones[second].solverPosition.clone().sub(bones[first].solverPosition), toBendPoint);
+		let q1 = Quaternion.fromToRotation(bones[second].solverPosition.clone().sub(bones[first].solverPosition), toBendPoint);
 		if (weight < 1) q1 = Quaternion.identity.lerp(q1, weight);
-		//console.log(bones[first].solverRotation)
 
 		if (bones[first].solverRotation.w == undefined|| isNaN(bones[first].solverRotation.w)) {
 			console.error('corrupt data bones[first].solverRotation.w')
@@ -218,7 +228,7 @@ export class VirtualBone {
 		}
 
 
-		let q2 = Quaternion.FromToRotation(bones[third].solverPosition.clone().sub(bones[second].solverPosition), targetPosition.clone().sub(bones[second].solverPosition) );
+		let q2 = Quaternion.fromToRotation(bones[third].solverPosition.clone().sub(bones[second].solverPosition), targetPosition.clone().sub(bones[second].solverPosition) );
 		if (weight < 1) q2 = Quaternion.identity.lerp(q2, weight);
 
 		if (bones[second].solverRotation.w == undefined) {
@@ -229,17 +239,23 @@ export class VirtualBone {
 		this.rotateAroundPoint(bones, second, bones[second].solverPosition.clone(), q2);
 	}
 
+
+
+
 	//Calculates the bend direction based on the law of cosines. NB! Magnitude of the returned vector does not equal to the length of the first bone!
-	static getDirectionToBendPoint(direction, directionMag, bendDirection, sqrMag1, sqrMag2) {
+	static getDirectionToBendPoint(/*Vector3*/direction, /*float*/directionMag, /*Vector3*/bendDirection, /*float*/sqrMag1, /*float*/sqrMag2) {
 	  let x = ((directionMag * directionMag) + (sqrMag1 - sqrMag2)) / 2 / directionMag;
 		let y = Math.sqrt(Math.clamp(sqrMag1 - x * x, 0, Infinity));
 
-		if (!direction.length) return Vector3.zero;
-		return Quaternion.LookRotation(direction, bendDirection).multiply( new Vector3(0, y, x) );
+		if (direction.equals(Vector3.zero)) return Vector3.zero;
+		return Quaternion.lookRotation(direction, bendDirection).multiplyVector3( new Vector3(0, y, x) );
 	}
 
+
+
+
 	// Solves a simple FABRIK pass for a bone hierarchy, not using rotation limits or singularity breaking here
-	static solveFABRIK(bones, startPosition, targetPosition, weight, minNormalizedTargetDistance, iterations, length) {
+	static solveFABRIK(/*VirtualBone[]*/bones, /*Vector3*/startPosition, /*Vector3*/targetPosition, /*float*/weight, /*float*/minNormalizedTargetDistance, /*int*/iterations, /*float*/length) {
 		if (weight <= 0) return;
 
 		if (minNormalizedTargetDistance > 0) {
@@ -251,8 +267,6 @@ export class VirtualBone {
 
 		// Iterating the solver
 		for (let iteration = 0; iteration < iterations; iteration ++) {
-
-			//console.log("JJJ", bones[bones.length - 1].solverPosition.clone().lerp(targetPosition, weight))
 
 			if (bones[bones.length - 1].solverPosition.x == undefined || isNaN(bones[bones.length - 1].solverPosition.x)) {
 				console.error('pre corrupt data bones[bones.length - 1].solverPosition')
@@ -274,7 +288,7 @@ export class VirtualBone {
 			}
 
 			// Stage 2
-			bones[0].solverPosition = startPosition;
+			bones[0].solverPosition = startPosition.clone();
 
 			for (let i = 1; i < bones.length; i++) {
 				bones[i].solverPosition = this.solveFABRIKJoint(bones[i].solverPosition, bones[i - 1].solverPosition, bones[i - 1].length);
@@ -293,12 +307,18 @@ export class VirtualBone {
 		}
 	}
 
+
+
+
 	// Solves a FABRIK joint between two bones.
 	static solveFABRIKJoint(pos1, pos2, length) {
 		return pos2.clone().add( pos1.clone().sub(pos2).normalize().multiplyScalar(length) );
 	}
 
-	static solveCCD(bones, targetPosition, weight, iterations) {
+
+
+
+	static solveCCD(/*VirtualBone[]*/bones, /*Vector3*/targetPosition, /*float*/weight, /*int*/iterations) {
 		if (weight <= 0) return;
 
 		// Iterating the solver
@@ -307,7 +327,7 @@ export class VirtualBone {
 				let toLastBone = bones[bones.length - 1].solverPosition.clone().sub( bones[i].solverPosition );
 				let toTarget = targetPosition.clone().sub( bones[i].solverPosition );
 
-				let rotation = Quaternion.FromToRotation(toLastBone, toTarget);
+				let rotation = Quaternion.fromToRotation(toLastBone, toTarget);
 
 				if (weight >= 1) {
 					//bones[i].transform.rotation = targetRotation;
