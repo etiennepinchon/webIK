@@ -1,5 +1,5 @@
-import Keyframe from './Keyframe';
-import AnimationCurve from './AnimationCurve';
+import Keyframe from './tools/Keyframe';
+import AnimationCurve from './tools/AnimationCurve';
 import Utils from './helpers/Utils';
 
 const radToDeg = (180.0 / Math.PI);

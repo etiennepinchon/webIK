@@ -43,7 +43,20 @@ AFRAME.registerComponent('fbx-model', {
 
 
 import Test from './test';
-new Test();
+//import QuaToolsTest from './tests/QuaToolsTest';
+//import V3ToolsTest from './tests/V3ToolsTest';
+//import AxisToolsTest from './tests/AxisToolsTest';
+//import PointTest from './tests/PointTest';
+//import InterpTest from './tests/InterpTest';
+import BoneTest from './tests/BoneTest';
+
+
+//new Test();
+
+setTimeout(()=>{
+  BoneTest.run();
+}, 100)
+
 
 
 

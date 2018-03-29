@@ -1,6 +1,6 @@
-import IK from './ik';
-import References from './References';
-import IKSolverVR from './IKSolverVR';
+import IK from './solvers/ik';
+import References from './solvers/References';
+import IKSolverVR from './solvers/IKSolverVR';
 
 export default class VRIK extends IK {
 

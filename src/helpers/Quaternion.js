@@ -98,22 +98,18 @@ export default class Quaternion {
       q = q.normalize();
 
       let sqrLength = q.x * q.x + q.y * q.y + q.z * q.z;
-      let angle, axisStore = new Vector3();
+      let angle, axis = new Vector3();
       if (sqrLength == 0) {
           angle = 0;
-          if (axisStore != null) {
-              axisStore.x = 1;
-              axisStore.y = 0;
-              axisStore.z = 0;
-          }
+          axis.setX(1);
+          axis.setY(0);
+          axis.setZ(0);
       } else {
           angle = (2 * Math.acos(q.w));
-          if (axisStore != null) {
-              let invLength = (1 / Math.sqrt(sqrLength));
-              axisStore.x = q.x * invLength;
-              axisStore.y = q.y * invLength;
-              axisStore.z = q.z * invLength;
-          }
+          let invLength = (1 / Math.sqrt(sqrLength));
+          axis.setX(q.x * invLength);
+          axis.setY(q.y * invLength);
+          axis.setZ(q.z * invLength);
       }
       angle *= radToDeg;
       return { axis, angle };

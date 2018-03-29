@@ -4,7 +4,10 @@
 export default class RotationLimit {
 
 
-	constructor() {
+	constructor(t) {
+
+		this.transform = t;
+
 		/// The main axis of the rotation limit.
 		this.axis = Vector3.forward;
 
@@ -35,7 +38,7 @@ export default class RotationLimit {
 	// @TODO_CHECK: out bool
 	getLimitedLocalRotation(/*Quaternion*/ localRotation, /*out bool*/ changed) {
 		// Making sure the Rotation Limit is initiated
-		if (!this.initiated) Awake ();
+		if (!this.initiated) this.awake ();
 
 		// Subtracting defaultLocalRotation
 		let rotation = defaultLocalRotation.clone().inverse().multiply( localRotation );
@@ -59,7 +62,7 @@ export default class RotationLimit {
 		let rot = transform.quaternion;
 		rot = new Quaternion(rot.x, rot.y, rot.z, rot.z);
 
-		rot = this.getLimitedLocalRotation(rot, out changed);
+		rot = this.getLimitedLocalRotation(rot, changed);
 		transform.quaternion = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.z);
 
 		return changed;

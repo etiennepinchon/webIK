@@ -14,5 +14,5 @@ export default class Utils {
 
   //window._scene.updateMatrixWorld();
 
-
+  // rotation.setFromQuaternion
 }
