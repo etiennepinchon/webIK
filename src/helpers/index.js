@@ -36,8 +36,6 @@ THREE.Object3D.prototype.setWorldPosition = function(worldPos) {
 
 THREE.Object3D.prototype.setWorldQuaternion = function(worldQua) {
 
-	var q = new THREE.Quaternion( -worldQua, worldQua, worldQua, -worldQua );
-
 	//this.updateMatrixWorld();
 
 	let rotMat = new THREE.Matrix4();
@@ -51,10 +49,6 @@ THREE.Object3D.prototype.setWorldQuaternion = function(worldQua) {
 	// this.quaternion.copy(qua);
 
   let euler = new THREE.Euler().setFromRotationMatrix(worldMat);
-
-	euler.y += Math.PI; // Y is 180 degrees off
-	euler.z *= -1; // flip Z
-
   this.rotation.copy(euler);
   return euler;
 }
@@ -67,13 +61,7 @@ THREE.Object3D.prototype.setUnityWorldQuaternion = function(qua) {
 
 
 THREE.Object3D.prototype.setUnityQuaternion = function(qua) {
-	let q = new THREE.Quaternion(-qua.x, qua.y, qua.z, -qua.w);
-  this.quaternion.copy( q );
-
-	this.rotation.y += Math.PI; // Y is 180 degrees off
-	this.rotation.z *= -1; // flip Z
-
-
+  this.quaternion.copy( new THREE.Quaternion(qua.x, qua.y, qua.z, qua.w) );
 }
 
 THREE.Object3D.prototype.getUnityQuaternion = function() {
